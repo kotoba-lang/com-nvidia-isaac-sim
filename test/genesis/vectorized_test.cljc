@@ -1,0 +1,31 @@
+(ns genesis.vectorized-test
+  "Ported 1:1 from `kami-genesis/src/vectorized.rs` `#[cfg(test)]`."
+  (:require [clojure.test :refer [deftest is]]
+            [clojure.string :as str]
+            [genesis.vectorized :as vz]
+            [genesis.cartpole :as cartpole]))
+
+(deftest vectorized-matches-scalar-for-identical-envs
+  (let [cfg (cartpole/default-config)
+        n 1024
+        vstates0 (vec (repeat n (assoc (cartpole/default-state) :theta 0.05)))
+        actions (vec (repeat n 5.0))
+        vstates (reduce (fn [ss _] (vz/step-vectorized ss actions cfg)) vstates0 (range 100))
+        scalar0 (assoc (cartpole/default-state) :theta 0.05)
+        scalar (reduce (fn [s _] (cartpole/step s 5.0 cfg)) scalar0 (range 100))]
+    (doseq [s vstates]
+      (is (< (Math/abs (- (:x s) (:x scalar))) 1e-6))
+      (is (< (Math/abs (- (:theta s) (:theta scalar))) 1e-6)))))
+
+(deftest vectorized-handles-distinct-per-env-actions
+  (let [cfg (cartpole/default-config)
+        states0 [(cartpole/default-state) (cartpole/default-state)]
+        actions [10.0 -10.0]
+        states (reduce (fn [ss _] (vz/step-vectorized ss actions cfg)) states0 (range 60))]
+    (is (> (:x (nth states 0)) 0.0))
+    (is (< (:x (nth states 1)) 0.0))))
+
+(deftest wgsl-source-embeds-state-struct
+  (is (str/includes? vz/wgsl-source "struct State"))
+  (is (str/includes? vz/wgsl-source "@workgroup_size(64)"))
+  (is (str/includes? vz/wgsl-source "@compute")))
