@@ -25,7 +25,10 @@
     (is (> (:x (nth states 0)) 0.0))
     (is (< (:x (nth states 1)) 0.0))))
 
-(deftest wgsl-source-embeds-state-struct
-  (is (str/includes? vz/wgsl-source "struct State"))
-  (is (str/includes? vz/wgsl-source "@workgroup_size(64)"))
-  (is (str/includes? vz/wgsl-source "@compute")))
+;; wgsl-source is only embedded on :clj (slurp'd from a classpath resource);
+;; :cljs has no resource-loading equivalent yet and is nil by design.
+#?(:clj
+   (deftest wgsl-source-embeds-state-struct
+     (is (str/includes? vz/wgsl-source "struct State"))
+     (is (str/includes? vz/wgsl-source "@workgroup_size(64)"))
+     (is (str/includes? vz/wgsl-source "@compute"))))
