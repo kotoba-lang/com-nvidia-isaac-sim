@@ -15,8 +15,8 @@
   Restored from kotoba-lang/kami-engine `kami-genesis/src/vectorized.rs`
   (deleted PR #82) as zero-dependency portable CLJC. Per ADR-2607010930.
   Ported 1:1 (fully portable pure math/data)."
-  (:require [genesis.cartpole :as cartpole]
-            [clojure.java.io :as io]))
+  (:require [genesis.cartpole :as cartpole])
+  #?@(:clj [(:require [clojure.java.io :as io])]))
 
 (def wgsl-source
   "The exact WGSL source that the (excluded, native-only) wgpu backend
