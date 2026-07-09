@@ -1,6 +1,6 @@
 # kotoba-lang/com-nvidia-isaac-sim
 
-> Renamed from `kami-genesis` 2026-07-09 (ADR-2607086600) — reverse-domain
+> Renamed from `kami-genesis` 2026-07-09 (ADR-2607087500) — reverse-domain
 > naming reflecting genuine, verified API-surface conformance: this is a
 > clean-room facade for NVIDIA Isaac Sim's real, documented
 > [`isaacsim.core.api`](https://docs.isaacsim.omniverse.nvidia.com/latest/py/source/extensions/isaacsim.core.api/docs/index.html)
