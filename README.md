@@ -1,4 +1,14 @@
-# kami-genesis
+# kotoba-lang/com-nvidia-isaac-sim
+
+> Renamed from `kami-genesis` 2026-07-09 (ADR-2607086600) — reverse-domain
+> naming reflecting genuine, verified API-surface conformance: this is a
+> clean-room facade for NVIDIA Isaac Sim's real, documented
+> [`isaacsim.core.api`](https://docs.isaacsim.omniverse.nvidia.com/latest/py/source/extensions/isaacsim.core.api/docs/index.html)
+> (World/Articulation) and PhysX 5 (spatial-vector rigid-body dynamics,
+> GJK/EPA contact), confirmed against NVIDIA's own API docs, not renamed on
+> assumption alone. No NVIDIA/PhysX/Omniverse library, header, or binary is
+> linked — pure clean-room reimplementation. Clojure namespaces (`genesis.*`)
+> are unchanged.
 
 Genesis-compat physics backend for KAMI / e7m-sim — an `isaacsim.core.api` /
 PhysX 5 API-surface facade, restored as zero-dependency portable Clojure
