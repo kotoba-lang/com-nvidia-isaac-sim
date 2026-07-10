@@ -25,7 +25,12 @@
 
 (defn clamp [v lo hi] (max lo (min hi v)))
 
-(defn- mass-matrix [{:keys [m1 m2 l1 l2]} q2]
+(defn mass-matrix
+  "[m11 m12 m22] — the 2x2 symmetric manipulator mass matrix M(q) at this
+  q2 (m11/m12/m22 depend only on q2, not q1, for this planar 2-link
+  geometry). Public: genesis.double-pendulum-joint-limits builds a joint-
+  space constraint on this same M(q) (ADR-2607110900 M3)."
+  [{:keys [m1 m2 l1 l2]} q2]
   (let [lc1 (* l1 0.5) lc2 (* l2 0.5)
         i1 (/ (* m1 l1 l1) 12.0) i2 (/ (* m2 l2 l2) 12.0)
         c2 (Math/cos q2)
