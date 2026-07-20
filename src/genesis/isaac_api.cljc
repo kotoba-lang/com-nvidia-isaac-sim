@@ -3,37 +3,46 @@
   `ArticulationViewMut`, `ArticulationControllerView`) — clean-room mirror
   of the Isaac Sim 4.x surface, no NVIDIA library linked.
 
-  Scoping decision: the original `isaac_api.rs` is a thin wrapper around
+  The original `isaac_api.rs` is a thin wrapper around
   `genesis.world`'s `World`/`Articulation` (`kami_articulated`-URDF-driven,
   out of scope here — see `genesis.world`) plus `genesis.controllers`. It
   adds no numerical logic of its own; every method delegates straight
   through to the wrapped `World`/`Articulation`/`ArticulationController`.
-  Since the underlying `World` is scoped to config/constants-only in this
-  restoration, this facade is likewise ported as data + delegation
-  signatures only: the `physics-dt`/`current-time`/`current-time-step-index`
-  clock bookkeeping (pure, no URDF dependency) is fully ported below; the
-  view constructors that would wrap a live `World` articulation are left
-  as documented no-op signatures for API-surface completeness.
+  This facade owns a live pure `genesis.world` container. It supports adding
+  generic 3-D articulations, queuing their efforts, stepping all of them with
+  the clock, resetting, and retrieving link state. Python's actual Isaac Sim
+  runtime remains available separately in `python/isaac_sim_6_smoke.py`.
 
   Restored from kotoba-lang/kami-engine `kami-genesis/src/isaac_api.rs`
   (deleted PR #82) as zero-dependency portable CLJC. Per ADR-2607010930."
-  )
+  (:require [genesis.world :as world]))
 
 (defn new-isaac-world [physics-dt]
-  {:physics-dt physics-dt :time-step-index 0})
+  {:physics-dt physics-dt :time-step-index 0
+   :world (assoc (world/default-world) :dt physics-dt)})
 
 (defn get-physics-dt [w] (:physics-dt w))
 (defn current-time-step-index [w] (:time-step-index w))
 (defn current-time [{:keys [physics-dt time-step-index]}] (* physics-dt time-step-index))
 
+(defn add-articulation [w name cfg]
+  (update w :world world/add-articulation name cfg))
+
+(defn set-articulation-efforts [w name efforts]
+  (update w :world world/set-articulation-efforts name efforts))
+
+(defn get-articulation [w name]
+  (world/articulation (:world w) name))
+
+(defn get-link-state [w articulation-name link-name]
+  (world/articulation-link-state (:world w) articulation-name link-name))
+
 (defn step
-  "Advance the clock by one physics step (`time-step-index` increments;
-  actual articulation stepping is delegated to `genesis.world/step-topology`
-  by the caller, mirroring the original's `World::step()` + clock-advance
-  split)."
-  [w] (update w :time-step-index inc))
+  "Advance all registered articulations and then the Isaac-style clock."
+  [w]
+  (-> w (update :world world/step-articulations) (update :time-step-index inc)))
 
 (defn reset
   "Rewind the clock (`current_time`/`current_time_step_index` reset to 0),
   mirroring `isaacsim.core.api.World.reset()`."
-  [w] (assoc w :time-step-index 0))
+  [w] (assoc w :time-step-index 0 :world (world/reset (:world w))))

@@ -23,3 +23,39 @@
         b (assoc (batched/new-batch cfg 1) :dof-names ["shoulder" "elbow"])]
     (is (= (batched/get-dof-index b "elbow") 1))
     (is (nil? (batched/get-dof-index b "wrist")))))
+
+(deftest batch-step-applies-env-major-effort-tensor
+  (let [cfg (a3d/from-articulated-system
+             {:links [{:name "slider" :inertia {:mass 2.0 :com {:xyz [0.0 0.0 0.0]}}}]
+              :joints [{:name "joint" :kind :prismatic :parent "world" :child "slider"
+                        :origin {:xyz [0.0 0.0 0.0] :rpy [0.0 0.0 0.0]}
+                        :axis [1.0 0.0 0.0]}]})
+        batch (-> (batched/new-batch cfg 2)
+                  (batched/set-efforts [4.0 8.0])
+                  batched/step)]
+    (is (= ["slider"] (batched/dof-names batch)))
+    (is (= [4.0 8.0] (:last-efforts batch)))
+    (is (= [0.0 0.0] (:efforts batch)))
+    (is (= [(/ 2.0 60.0)] (get-in batch [:states 0 :qdot])))
+    (is (= [(/ 4.0 60.0)] (get-in batch [:states 1 :qdot])))))
+
+(deftest batch-reset-can-target-one-environment
+  (let [cfg (a3d/->articulation3d-config [] [0.0 0.0 -9.81] 0.01 1)
+        batch (assoc (batched/new-batch cfg 2) :states [{:q [1.0] :qdot [2.0]}
+                                                        {:q [3.0] :qdot [4.0]}])
+        reset (batched/reset batch 1)]
+    (is (= {:q [1.0] :qdot [2.0]} (first (:states reset))))
+    (is (= {:q [0.0] :qdot [0.0]} (second (:states reset))))))
+
+(deftest pd-drive-broadcasts-per-dof-gains-and-targets
+  (let [cfg (a3d/from-articulated-system
+             {:links [{:name "slider" :inertia {:mass 2.0 :com {:xyz [0.0 0.0 0.0]}}}]
+              :joints [{:name "joint" :kind :prismatic :parent "world" :child "slider"
+                        :origin {:xyz [0.0 0.0 0.0] :rpy [0.0 0.0 0.0]}
+                        :axis [1.0 0.0 0.0]}]})
+        batch (-> (batched/new-batch cfg 2)
+                  (batched/set-pd-drive (batched/->pd-drive {:targets [1.0] :kps [4.0] :kds [0.0]}))
+                  batched/step-pd-drive)]
+    (is (= [4.0 4.0] (:last-efforts batch)))
+    (is (= [(/ 2.0 60.0)] (get-in batch [:states 0 :qdot])))
+    (is (= [(/ 2.0 60.0)] (get-in batch [:states 1 :qdot])))))

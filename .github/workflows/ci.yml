@@ -46,3 +46,6 @@ jobs:
 
       - name: Lint (clj-kondo)
         run: clojure -M:lint
+
+      - name: Verify Isaac Sim 6 integration contract
+        run: python3 -m unittest discover -s python/tests -p 'test_*.py'
