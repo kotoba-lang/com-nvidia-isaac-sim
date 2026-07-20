@@ -3,6 +3,7 @@
   its docstring for the URDF-dependency scoping rationale)."
   (:require [clojure.test :refer [deftest is]]
             [genesis.world :as world]
+            [genesis.articulation3d :as a3d]
             [genesis.cartpole :as cartpole]))
 
 (deftest link-state-at-origin-is-identity
@@ -30,3 +31,20 @@
   (let [art {:topology :cartpole :cfg (cartpole/default-config) :state (cartpole/default-state)}
         j (world/jacobian-for-link art "cart")]
     (is (= (get-in j [:rows 0]) [1.0 0.0]))))
+
+(deftest world-steps-a-named-general-articulation
+  (let [cfg (a3d/from-articulated-system
+             {:links [{:name "slider" :inertia {:mass 2.0 :com {:xyz [0.0 0.0 0.0]}}}]
+              :joints [{:name "joint" :kind :prismatic :parent "world" :child "slider"
+                        :origin {:xyz [0.0 0.0 0.0] :rpy [0.0 0.0 0.0]}
+                        :axis [1.0 0.0 0.0]}]})
+        w (-> (world/default-world)
+              (world/add-articulation "slider" cfg)
+              (world/set-articulation-efforts "slider" [4.0])
+              world/step-articulations)
+        entry (world/articulation w "slider")
+        state (world/articulation-link-state w "slider" "slider")]
+    (is (= [(/ 2.0 60.0)] (get-in entry [:state :qdot])))
+    (is (= [0.0] (:efforts entry)))
+    (is (= [(/ 1.0 1800.0) 0.0 0.0] (:position state)))
+    (is (= [(/ 2.0 60.0) 0.0 0.0] (:linear-velocity state)))))

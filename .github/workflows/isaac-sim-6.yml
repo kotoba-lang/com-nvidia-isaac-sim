@@ -1,0 +1,46 @@
+name: Isaac Sim 6 Runtime
+
+on:
+  workflow_dispatch:
+    inputs:
+      frames:
+        description: Physics frames for the Franka smoke test
+        required: false
+        default: "240"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  franka-smoke:
+    name: Headless Franka articulation smoke
+    # This job is intentionally manual: GitHub-hosted runners do not ship Isaac
+    # Sim, an NVIDIA driver, or an RTX-capable GPU. Runner provisioning is part
+    # of the release environment rather than a test fallback.
+    runs-on: [self-hosted, linux, x64, nvidia-gpu, isaac-sim-6]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify Isaac Sim 6 runtime
+        env:
+          ISAACSIM_PATH: ${{ vars.ISAACSIM_PATH }}
+        run: |
+          test -n "$ISAACSIM_PATH"
+          test -x "$ISAACSIM_PATH/python.sh"
+
+      - name: Run Franka simulation and export USD
+        env:
+          ISAACSIM_PATH: ${{ vars.ISAACSIM_PATH }}
+        run: |
+          mkdir -p artifacts
+          ./scripts/run-isaac-sim-6-smoke.sh --frames "${{ inputs.frames }}" \
+            --output-usd artifacts/isaac-sim-6-franka-smoke.usd | tee artifacts/result.json
+
+      - name: Upload simulation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: isaac-sim-6-franka-smoke
+          path: artifacts/
+          if-no-files-found: error

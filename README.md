@@ -1,18 +1,67 @@
 # kotoba-lang/com-nvidia-isaac-sim
 
 > Renamed from `kami-genesis` 2026-07-09 (ADR-2607087500) — reverse-domain
-> naming reflecting genuine, verified API-surface conformance: this is a
-> clean-room facade for NVIDIA Isaac Sim's real, documented
+> naming reflecting genuine, verified historical API-surface conformance: this
+> is a clean-room facade for NVIDIA Isaac Sim's documented
 > [`isaacsim.core.api`](https://docs.isaacsim.omniverse.nvidia.com/latest/py/source/extensions/isaacsim.core.api/docs/index.html)
 > (World/Articulation) and PhysX 5 (spatial-vector rigid-body dynamics,
-> GJK/EPA contact), confirmed against NVIDIA's own API docs, not renamed on
-> assumption alone. No NVIDIA/PhysX/Omniverse library, header, or binary is
-> linked — pure clean-room reimplementation. Clojure namespaces (`genesis.*`)
-> are unchanged.
+> GJK/EPA contact), confirmed against NVIDIA's own API docs. The portable
+> Clojure facade targets the Isaac Sim 4.x-era surface; the separate Python
+> adapter below targets actual Isaac Sim 6.0 runtime APIs. No NVIDIA/PhysX/
+> Omniverse library, header, or binary is linked by the Clojure library.
+> Clojure namespaces (`genesis.*`) are unchanged.
 
 Genesis-compat physics backend for KAMI / e7m-sim — an `isaacsim.core.api` /
 PhysX 5 API-surface facade, restored as zero-dependency portable Clojure
-(`.cljc`).
+(`.cljc`). It also has an **optional, real Isaac Sim 6.0 runtime adapter**:
+the adapter is Python-only and is deliberately separated from the portable
+kernel, so an Isaac installation is required only for runtime integration.
+
+## Isaac Sim 6.0 runtime smoke test
+
+`python/isaac_sim_6_smoke.py` runs a real headless Isaac Sim 6.0 scene. It
+creates a ground plane, loads the installed Franka USD, verifies its nine DOFs,
+applies a nine-joint target, explicitly steps physics and rendering, validates
+the resulting joint state, and saves the scene as USD. This follows NVIDIA's
+Isaac Sim 6.0 standalone lifecycle: create `SimulationApp` before Omniverse
+imports, then use the experimental stage/Articulation APIs and explicit
+`SimulationManager.step()` / `RenderingManager.render()` steps.
+
+```bash
+ISAACSIM_PATH=/opt/isaac-sim ./scripts/run-isaac-sim-6-smoke.sh --frames 240 \
+  --output-usd artifacts/franka-smoke.usd
+```
+
+`ISAACSIM_PATH` must point at an Isaac Sim 6.0 installation containing
+`python.sh`. In container or pip-package layouts, set `ISAACSIM_PYTHON` to the
+configured Isaac Python launcher instead. The script writes a single JSON
+result to stdout and exits nonzero if the asset root, articulation DOFs, joint
+state, target application, or USD save fails. Its dependency-free contract
+tests run in ordinary CI; the real smoke test must run on a Linux NVIDIA GPU
+runner with Isaac Sim 6.0 installed. Trigger **Isaac Sim 6 Runtime** manually
+on a runner labelled `self-hosted`, `linux`, `x64`, `nvidia-gpu`, and
+`isaac-sim-6`; it uploads both the exported USD and JSON result as evidence.
+
+### Modal GPU execution
+
+`modal/isaac_sim_6_smoke.py` runs the same smoke test on Modal's
+`RTX-PRO-6000` GPU and commits the exported USD to the
+`isaac-sim-6-artifacts` Modal Volume. It invokes the NGC image's own
+`/isaac-sim/python.sh`, which is required to load Kit extensions correctly.
+
+```bash
+python3 -m pip install -r modal/requirements.txt
+modal secret create ngc-registry \
+  REGISTRY_USERNAME='$oauthtoken' REGISTRY_PASSWORD='<NGC_API_KEY>'
+modal volume create isaac-sim-6-artifacts
+modal run modal/isaac_sim_6_smoke.py --frames 240
+```
+
+Create the NGC API key in the NVIDIA NGC account that has accepted the Isaac
+Sim container terms. The registry secret is used only while Modal pulls
+`nvcr.io/nvidia/isaac-sim:6.0.1`; it is not injected into the simulation
+function. Modal build and first Kit launch can take several minutes because
+the image and shader cache are large.
 
 Restored from `kotoba-lang/kami-engine`'s `kami-genesis` crate (deleted in
 [PR #82](https://github.com/kotoba-lang/kami-engine/pull/82), "Remove Rust
@@ -40,10 +89,19 @@ controller, a 2-D thermal FDM PDE solver, and a PD/velocity/effort
 articulation controller (adapted to operate on plain state vectors instead
 of a `kami_articulated`-backed `Articulation`).
 
+**General 3-D kinematics now available:** `genesis.articulation3d` accepts
+the public plain-map result of `kami-articulated/parse-urdf`, topologically
+builds a general fixed/revolute/prismatic tree, computes world-frame forward
+kinematics, returns a 6xN geometric Jacobian, solves constrained
+world-position IK with damped least squares, and supplies RNEA bias, CRBA
+mass-matrix, forward/inverse dynamics and semi-implicit Euler stepping. This is an intentionally
+zero-dependency bridge: parsing URDF remains the responsibility of the
+optional `kotoba-lang/kami-articulated` library.
+
 **Scoped to config/data-only** (URDF-driven or too large a numerical
 solver core to port faithfully in this pass — see each namespace's
 docstring for the full rationale): `genesis.world`, `genesis.isaac-api`,
-`genesis.batched`, `genesis.articulation3d`, `genesis.mpm` (data +
+`genesis.batched`, `genesis.mpm` (data +
 obstacle-projection geometry), `genesis.contact` (data + obstacle-contact
 geometry, PGS multi-body coupling excluded).
 
@@ -76,11 +134,11 @@ source strings ARE portable data and are preserved as embedded resources
 | `vectorized.rs` | (see above) | | | |
 | `wgpu_backend.rs` | 866 | *(none)* | **excluded** | wgpu `Device`/`Queue`/`ComputePipeline` construction and compute-pass dispatch — no CLJC representation (native GPU binding). |
 | `wgpu_planar.rs` | 349 | *(none)* | **excluded** | Same as above, for the planar-chain GPU batch path. |
-| `world.rs` | 1077 | `genesis.world` | **scoped: config/data + topology dispatcher** | `LinkState`, `WorldError` variants, default `World` params ported 1:1. `Articulation::from_urdf` requires the not-restored `kami_articulated` crate; a `step-topology`/`jacobian-for-link` dispatcher over the closed-form topologies is provided instead. |
-| `articulation3d.rs` | 1564 | `genesis.articulation3d` | **scoped: data model only** | `JointType3d`, `Body3d`, `Articulation3dConfig`, `Articulation3dState` + `movable?`/`zeros-state`/`n-bodies` ported 1:1 (pure data, no `kami_articulated` dependency). The ~1400-line RNEA/CRBA/IK/Jacobian solver core (built directly on the already-fully-ported `genesis.spatial` primitives) is a documented gap given the file's scale relative to the other 22 files — not native code, a follow-up restoration candidate. `from_articulated_system` (URDF constructor) excluded (needs `kami_articulated`). |
-| `batched.rs` | 1329 | `genesis.batched` | **scoped: data schema only** | `ArticulationBatch`/`PdDrive` record shapes + env/DOF-count metadata (`num-envs`, `num-dof`, `dof-names`, `dof-limits`, `get-dof-index`) ported. The tensor step/actuator/IK/domain-randomization methods depend on the `genesis.articulation3d` solver core (scoped out above); left as a documented gap. |
-| `contact.rs` | 1014 | `genesis.contact` | **scoped: data + obstacle-contact geometry** | `Collider`/`Obstacle` shape data + `obstacle-contact` (plane/AABB/convex sphere-contact generation, pure math over `genesis.vec3`/`genesis.convex`) ported 1:1. `ContactWorld`'s velocity-level PGS solver (couples contacts into `Articulation3dConfig`'s joint space) excluded — depends on the scoped-out `genesis.articulation3d` solver core. |
-| `isaac_api.rs` | 708 | `genesis.isaac-api` | **scoped: clock + delegation only** | `IsaacWorld` clock bookkeeping (`physics-dt`/`current-time`/`current-time-step-index`/`step`/`reset`) ported 1:1 (pure, no URDF dependency). The `ArticulationView`/`ArticulationViewMut`/`ArticulationControllerView` wrappers delegate straight through to the (scoped-out) `World`/`ArticulationController`; left as documented no-op signatures. |
+| `world.rs` | 1077 | `genesis.world` | **partial: named generic articulations + topology dispatcher** | `LinkState`, `WorldError`, default params, named general-3D articulation registration, effort commands, deterministic stepping/reset and world-frame link pose/twist are implemented. A plain `kami-articulated` parse result can build the config; parsing itself remains optional. The closed-form topology dispatcher is retained. |
+| `articulation3d.rs` | 1564 | `genesis.articulation3d` | **partial: data + URDF-system bridge + kinematics + dynamics** | `JointType3d`, `Body3d`, config/state helpers, `from-articulated-system`, tree world FK, 6xN world-frame Jacobian, damped-least-squares position/pose IK, RNEA bias, CRBA mass matrix, forward/inverse dynamics, gravity torque, and semi-implicit Euler integration are implemented. The bridge consumes `kami-articulated`'s plain parse result without linking that optional library. Batch simulation and contact coupling remain gaps. |
+| `batched.rs` | 1329 | `genesis.batched` | **partial: env-major CPU batch dynamics + PD drive** | `ArticulationBatch`/`PdDrive` shapes, metadata, effort tensors, deterministic multi-env CPU stepping, reset, and broadcastable PD position/velocity drive with optional gravity compensation are implemented. Tensor-native GPU execution, batched IK and domain randomization remain gaps. |
+| `contact.rs` | 1014 | `genesis.contact` | **partial: static PGS + articulated point contact** | `Collider`/`Obstacle` data, plane/AABB/convex sphere contact generation, point Jacobian based `M^-1 J^T` normal impulse, restitution, Baumgarte correction, two-axis Coulomb friction, deterministic multi-contact static-obstacle PGS sweeps, caller-owned warm starting, and equal-and-opposite normal point impulse between two articulations are implemented. Articulated manifolds and inter-body friction remain gaps. |
+| `isaac_api.rs` | 708 | `genesis.isaac-api` | **partial: clock + live world delegation** | `IsaacWorld` clock bookkeeping plus generic articulation registration, effort command, world step/reset, and link state access are implemented through `genesis.world`. Python `SimulationApp` remains the real Isaac Sim 6 runtime integration. |
 | `ik.rs` | 517 | `genesis.ik` | ported | DLS inverse kinematics over all 3 topologies (uses `genesis.jacobian`). Pure math. |
 | `src/wgsl/cartpole_step.wgsl` | 63 | `resources/genesis/wgsl/cartpole_step.wgsl` | ported (as data) | Embedded verbatim; loaded by `genesis.vectorized/wgsl-source`. |
 | `src/wgsl/double_pendulum_step.wgsl` | 87 | `resources/genesis/wgsl/double_pendulum_step.wgsl` | ported (as data) | Embedded verbatim (not wired to a CLJC loader — no CLJC consumer for the DP GPU path since `wgpu_backend.rs` is excluded — but preserved as portable data). |
@@ -118,7 +176,7 @@ test/genesis*.cljc                — mirrored test namespaces (1 per src namesp
 clojure -M:test
 ```
 
-Ran **110 tests / 2463 assertions, 0 failures, 0 errors** (verified via
+Ran **128 tests / 2518 assertions, 0 failures, 0 errors** (verified via
 `clojure -M:test` against a full JVM Clojure execution, not just syntax
 checking).
 

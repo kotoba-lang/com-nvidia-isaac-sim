@@ -5,7 +5,8 @@
   see `genesis.contact` docstring)."
   (:require [clojure.test :refer [deftest is]]
             [genesis.contact :as contact]
-            [genesis.convex :as convex]))
+            [genesis.convex :as convex]
+            [genesis.articulation3d :as a3d]))
 
 (deftest plane-contact-when-penetrating
   (let [plane (contact/obstacle-plane [0.0 0.0 1.0] 0.0)
@@ -36,3 +37,74 @@
         c (contact/obstacle-contact obstacle 0 [1.0 0.0 0.0] 0.6 1e-3)]
     (is (some? c))
     (is (> (Math/abs (nth (:n c) 0)) 0.9))))
+
+(deftest static-contact-applies-a-nonpenetration-normal-impulse
+  (let [cfg (a3d/from-articulated-system
+             {:links [{:name "slider" :inertia {:mass 2.0 :com {:xyz [0.0 0.0 0.0]}}}]
+              :joints [{:name "joint" :kind :prismatic :parent "world" :child "slider"
+                        :origin {:xyz [0.0 0.0 0.0] :rpy [0.0 0.0 0.0]}
+                        :axis [0.0 0.0 1.0]}]})
+        result (contact/resolve-static-contact
+                cfg {:q [0.0] :qdot [-1.0]}
+                {:link "slider" :p [0.0 0.0 0.0] :n [0.0 0.0 1.0] :depth 0.0})]
+    (is (= -1.0 (:normal-velocity result)))
+    (is (= 2.0 (:impulse result)))
+    (is (= [0.0] (get-in result [:state :qdot])))))
+
+(deftest static-contact-friction-clamps-tangential-impulse-to-coulomb-cone
+  (let [cfg (a3d/from-articulated-system
+             {:links [{:name "x-link" :inertia {:mass 0.0 :com {:xyz [0.0 0.0 0.0]}}}
+                      {:name "xz-link" :inertia {:mass 2.0 :com {:xyz [0.0 0.0 0.0]}}}]
+              :joints [{:name "x" :kind :prismatic :parent "world" :child "x-link"
+                        :origin {:xyz [0.0 0.0 0.0] :rpy [0.0 0.0 0.0]}
+                        :axis [1.0 0.0 0.0]}
+                       {:name "z" :kind :prismatic :parent "x-link" :child "xz-link"
+                        :origin {:xyz [0.0 0.0 0.0] :rpy [0.0 0.0 0.0]}
+                        :axis [0.0 0.0 1.0]}]})
+        result (contact/resolve-static-contact-friction
+                cfg {:q [0.0 0.0] :qdot [1.0 -1.0]}
+                {:link "xz-link" :p [0.0 0.0 0.0] :n [0.0 0.0 1.0] :depth 0.0}
+                {:friction 0.5})]
+    ;; Normal impulse is 2; each tangent impulse is bounded by 1.0.
+    (is (= 2.0 (:impulse result)))
+    (is (= 2 (count (:friction-impulses result))))
+    (is (= [0.5 0.0] (get-in result [:state :qdot])))))
+
+(deftest static-contact-pgs-solves-a-contact-list-over-multiple-sweeps
+  (let [cfg (a3d/from-articulated-system
+             {:links [{:name "slider" :inertia {:mass 2.0 :com {:xyz [0.0 0.0 0.0]}}}]
+              :joints [{:name "joint" :kind :prismatic :parent "world" :child "slider"
+                        :origin {:xyz [0.0 0.0 0.0] :rpy [0.0 0.0 0.0]}
+                        :axis [0.0 0.0 1.0]}]})
+        contact {:link "slider" :p [0.0 0.0 0.0] :n [0.0 0.0 1.0] :depth 0.0}
+        result (contact/resolve-static-contacts cfg {:q [0.0] :qdot [-1.0]}
+                                                [contact contact] {:iters 3})]
+    (is (= 3 (:iterations result)))
+    (is (= 2 (count (:contacts result))))
+    (is (= [0.0] (get-in result [:state :qdot])))))
+
+(deftest warm-start-reapplies-cached-contact-impulses
+  (let [cfg (a3d/from-articulated-system
+             {:links [{:name "slider" :inertia {:mass 2.0 :com {:xyz [0.0 0.0 0.0]}}}]
+              :joints [{:name "joint" :kind :prismatic :parent "world" :child "slider"
+                        :origin {:xyz [0.0 0.0 0.0] :rpy [0.0 0.0 0.0]}
+                        :axis [0.0 0.0 1.0]}]})
+        contact {:link "slider" :p [0.0 0.0 0.0] :n [0.0 0.0 1.0] :depth 0.0}
+        state (contact/warm-start-static-contact cfg {:q [0.0] :qdot [0.0]}
+                                                contact {:impulse 2.0 :friction-impulses [0.0 0.0]})]
+    (is (= [1.0] (:qdot state)))))
+
+(deftest articulation-contact-applies-equal-and-opposite-impulses
+  (let [cfg (a3d/from-articulated-system
+             {:links [{:name "slider" :inertia {:mass 2.0 :com {:xyz [0.0 0.0 0.0]}}}]
+              :joints [{:name "joint" :kind :prismatic :parent "world" :child "slider"
+                        :origin {:xyz [0.0 0.0 0.0] :rpy [0.0 0.0 0.0]}
+                        :axis [0.0 0.0 1.0]}]})
+        result (contact/resolve-articulation-contact
+                cfg {:q [0.0] :qdot [1.0]} "slider"
+                cfg {:q [0.0] :qdot [0.0]} "slider"
+                [0.0 0.0 0.0] [0.0 0.0 1.0] 0.0)]
+    (is (= -1.0 (:relative-velocity result)))
+    (is (= 1.0 (:impulse result)))
+    (is (= [0.5] (get-in result [:state-a :qdot])))
+    (is (= [0.5] (get-in result [:state-b :qdot])))))
