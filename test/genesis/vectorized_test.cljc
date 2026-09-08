@@ -1,7 +1,7 @@
 (ns genesis.vectorized-test
   "Ported 1:1 from `kami-genesis/src/vectorized.rs` `#[cfg(test)]`."
   (:require [clojure.test :refer [deftest is]]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [genesis.vectorized :as vz]
             [genesis.cartpole :as cartpole]))
 
