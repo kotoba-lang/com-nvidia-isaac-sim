@@ -173,11 +173,11 @@ test/genesis*.cljc                — mirrored test namespaces (1 per src namesp
 ## Test plan
 
 ```
-clojure -M:test
+kbb -M:test
 ```
 
 Ran **128 tests / 2518 assertions, 0 failures, 0 errors** (verified via
-`clojure -M:test` against a full JVM Clojure execution, not just syntax
+`kbb -M:test` against a full JVM Clojure execution, not just syntax
 checking).
 
 Every original Rust `#[test]` in a ported file is reproduced 1:1 unless
