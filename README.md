@@ -153,18 +153,18 @@ are scoped to config/data-only extraction.
 ## Structure
 
 ```
-src/genesis.cljc                 — root namespace (crate constants)
-src/genesis/vec3.cljc             — shared portable 3-vector helpers (not from a single Rust file; factors out `glam::Vec3` ops used by obb/ccd/convex/spatial)
+src/genesis.cljk                 — root namespace (crate constants)
+src/genesis/vec3.cljk             — shared portable 3-vector helpers (not from a single Rust file; factors out `glam::Vec3` ops used by obb/ccd/convex/spatial)
 src/genesis/{cartpole,double_pendulum,planar_chain}.cljc  — closed-form dynamics
-src/genesis/vectorized.cljc       — CPU-vectorized cartpole + embedded WGSL
-src/genesis/spatial.cljc          — 6-D Plücker spatial-vector algebra
+src/genesis/vectorized.cljk       — CPU-vectorized cartpole + embedded WGSL
+src/genesis/spatial.cljk          — 6-D Plücker spatial-vector algebra
 src/genesis/{obb,ccd,convex}.cljc — collision geometry (SAT/CCD/GJK-EPA)
-src/genesis/jacobian.cljc         — analytical articulation Jacobians
-src/genesis/ik.cljc               — DLS inverse kinematics
-src/genesis/trajectory.cljc       — joint trajectory generators
-src/genesis/lqr.cljc              — LQR control
-src/genesis/thermal.cljc          — 2-D thermal FDM PDE solver
-src/genesis/controllers.cljc      — PD/velocity/effort articulation control
+src/genesis/jacobian.cljk         — analytical articulation Jacobians
+src/genesis/ik.cljk               — DLS inverse kinematics
+src/genesis/trajectory.cljk       — joint trajectory generators
+src/genesis/lqr.cljk              — LQR control
+src/genesis/thermal.cljk          — 2-D thermal FDM PDE solver
+src/genesis/controllers.cljk      — PD/velocity/effort articulation control
 src/genesis/{world,isaac_api,batched,articulation3d,contact,mpm}.cljc — scoped config/data-only facades
 resources/genesis/wgsl/*.wgsl     — embedded WGSL compute-shader source (portable data)
 test/genesis*.cljc                — mirrored test namespaces (1 per src namespace + root smoke test)
