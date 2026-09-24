@@ -1,6 +1,6 @@
 (ns genesis.ik-test
   "Ported 1:1 from `kami-genesis/src/ik.rs` `#[cfg(test)]`."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [genesis.ik :as ik]
             [genesis.cartpole :as cartpole]
             [genesis.double-pendulum :as dp]

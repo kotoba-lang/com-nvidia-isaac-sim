@@ -5,7 +5,7 @@
   here (see `genesis.trajectory` docstring); `trajectory-tracks-cartpole-x`
   below substitutes a self-contained equivalent using `genesis.cartpole` +
   `genesis.controllers` directly."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [genesis.trajectory :as traj]
             [genesis.cartpole :as cartpole]
             [genesis.controllers :as ctrl]))

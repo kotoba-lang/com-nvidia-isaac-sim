@@ -1,6 +1,6 @@
 (ns genesis.obb-test
   "Ported 1:1 from `kami-genesis/src/obb.rs` `#[cfg(test)]`."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [genesis.vec3 :as v3]
             [genesis.obb :as obb]))
 

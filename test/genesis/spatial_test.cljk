@@ -1,6 +1,6 @@
 (ns genesis.spatial-test
   "Ported 1:1 from `kami-genesis/src/spatial.rs` `#[cfg(test)]`."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [genesis.vec3 :as v3]
             [genesis.spatial :as sp]))
 

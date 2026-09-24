@@ -1,6 +1,6 @@
 (ns genesis.planar-chain-test
   "Ported 1:1 from `kami-genesis/src/planar_chain.rs` `#[cfg(test)]`."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [genesis.planar-chain :as pc]
             [genesis.double-pendulum :as dp]))
 

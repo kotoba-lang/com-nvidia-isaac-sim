@@ -1,7 +1,7 @@
 (ns genesis.double-pendulum-joint-limits-test
   "ADR-2607110900 M3. Closed-form/algebraic checks for the M(q)-coupled
   joint-limit constraint, distinguishing it from a naive per-joint clamp."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [genesis.double-pendulum :as dp]
             [genesis.double-pendulum-joint-limits :as jl]))
 

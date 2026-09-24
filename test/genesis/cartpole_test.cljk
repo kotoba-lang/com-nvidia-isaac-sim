@@ -1,6 +1,6 @@
 (ns genesis.cartpole-test
   "Ported 1:1 from `kami-genesis/src/cartpole.rs` `#[cfg(test)] mod tests`."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [genesis.cartpole :as cartpole]))
 
 (deftest pendulum-falls-from-small-initial-tilt

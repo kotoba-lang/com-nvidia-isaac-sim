@@ -1,7 +1,7 @@
 (ns genesis.articulation3d-test
   "Smoke tests for the config/data-only `genesis.articulation3d` scoped
   port (see its docstring for the scoping rationale)."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [genesis.articulation3d :as a3d]
             [genesis.spatial :as sp]))
 

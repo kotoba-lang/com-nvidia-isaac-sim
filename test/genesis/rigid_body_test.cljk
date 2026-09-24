@@ -1,7 +1,7 @@
 (ns genesis.rigid-body-test
   "Tests for `genesis.rigid-body` (ADR-2607110900 M2, minimal-scope free
   rigid body + static-obstacle sequential-impulse contact resolution)."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [genesis.vec3 :as v3]
             [genesis.contact :as contact]
             [genesis.rigid-body :as rb]))
