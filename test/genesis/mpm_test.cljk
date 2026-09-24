@@ -2,7 +2,7 @@
   "Tests for the ported `genesis.mpm` obstacle-projection geometry (the
   data + boundary-condition math is fully ported; the grid solver core is
   scoped out — see `genesis.mpm` docstring)."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [genesis.mpm :as mpm]))
 
 (deftest default-config-clamps-n-to-16

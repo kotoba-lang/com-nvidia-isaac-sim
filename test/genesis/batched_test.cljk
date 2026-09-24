@@ -1,7 +1,7 @@
 (ns genesis.batched-test
   "Smoke tests for the config/data-only `genesis.batched` scoped port
   (see its docstring for the scoping rationale)."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [genesis.batched :as batched]
             [genesis.articulation3d :as a3d]))
 

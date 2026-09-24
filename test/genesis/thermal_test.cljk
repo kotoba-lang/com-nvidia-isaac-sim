@@ -1,6 +1,6 @@
 (ns genesis.thermal-test
   "Ported 1:1 from `kami-genesis/src/thermal.rs` `#[cfg(test)]`."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [genesis.thermal :as th]))
 
 (deftest steady-state-matches-1d-analytic

@@ -3,7 +3,7 @@
   tests; the one Rust test requiring a `kami_articulated`-parsed URDF +
   `genesis.world`'s excluded `World`, `dp_jacobian_times_qdot_matches_link_state_velocity`,
   is not ported — see `genesis.jacobian` docstring)."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [genesis.jacobian :as jac]
             [genesis.cartpole :as cartpole]
             [genesis.double-pendulum :as dp]

@@ -1,6 +1,6 @@
 (ns genesis.ccd-test
   "Ported 1:1 from `kami-genesis/src/ccd.rs` `#[cfg(test)]`."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [genesis.ccd :as ccd]
             [genesis.convex :as convex]))
 

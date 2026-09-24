@@ -1,7 +1,7 @@
 (ns genesis.isaac-api-test
   "Smoke tests for the config/delegation-only `genesis.isaac-api` scoped
   port (see its docstring for the scoping rationale)."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [genesis.isaac-api :as ia]
             [genesis.articulation3d :as a3d]))
 

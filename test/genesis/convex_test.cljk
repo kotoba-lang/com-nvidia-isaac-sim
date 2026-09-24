@@ -1,6 +1,6 @@
 (ns genesis.convex-test
   "Ported 1:1 from `kami-genesis/src/convex.rs` `#[cfg(test)]`."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [genesis.convex :as convex]))
 
 (defn- unit-box [c] (convex/box-at c [0.5 0.5 0.5]))

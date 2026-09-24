@@ -5,7 +5,7 @@
   as the plant (see `genesis.controllers` docstring for the adaptation
   rationale) while preserving the PD/velocity/effort control-law
   assertions 1:1."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [genesis.controllers :as ctrl]
             [genesis.cartpole :as cartpole]
             [genesis.double-pendulum :as dp]))

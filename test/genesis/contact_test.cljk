@@ -3,7 +3,7 @@
   `Obstacle`/`Collider` shape data + plane/AABB/convex contact-generation
   math is fully ported; the coupled PGS multi-body solver is scoped out —
   see `genesis.contact` docstring)."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [genesis.contact :as contact]
             [genesis.convex :as convex]
             [genesis.articulation3d :as a3d]))

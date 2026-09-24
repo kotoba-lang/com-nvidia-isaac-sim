@@ -1,7 +1,7 @@
 (ns genesis-test
   "Namespace-loads smoke test for the `genesis` root namespace, plus the
   two pure `lib.rs` tests ported 1:1."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [genesis :as g]))
 
 (deftest namespace-loads
