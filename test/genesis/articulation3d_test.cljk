@@ -1,7 +1,7 @@
 (ns genesis.articulation3d-test
   "Smoke tests for the config/data-only `genesis.articulation3d` scoped
   port (see its docstring for the scoping rationale)."
-  (:require [kotoba.test :refer [deftest is]]
+  (:require [kotoba.lang.error :as kerror] [kotoba.test :refer [deftest is]]
             [genesis.articulation3d :as a3d]
             [genesis.spatial :as sp]))
 
@@ -118,7 +118,7 @@
     (is (< (Math/abs (- (/ Math/PI 2.0) (get-in result [:state :q 0]))) 1e-4))))
 
 (deftest invalid-articulated-tree-is-rejected
-  (is (thrown? #?(:clj clojure.lang.ExceptionInfo :cljs cljs.core/ExceptionInfo)
+  (is (thrown? kerror/ExceptionInfo
                (a3d/from-articulated-system
                 {:links [{:name "a"} {:name "b"}]
                  :joints [{:name "a-joint" :kind :fixed :parent "b" :child "a"}
